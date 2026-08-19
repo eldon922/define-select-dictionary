@@ -107,6 +107,26 @@ Open source under the GPLv3. Originally based on Lexigo by Jort van Leenen,
 itself based on Dictionary Anywhere by meetDeveloper.
 ```
 
+**Search terms**
+
+Up to 7 terms, 30 characters each, and no more than 21 words across all of
+them. These use 15 words, so there is room to add your own:
+
+```
+dictionary
+define selected word
+double click definition
+popup dictionary
+word meaning lookup
+english vocabulary
+pronunciation
+```
+
+Do not add "translate" or "translation": the extension defines words, it does
+not translate them, and terms that misdescribe an extension draw both
+rejections and one-star reviews. Do not use "Lexigo" either — trading on the
+original's name is the confusion this fork was renamed to avoid.
+
 ## 6. Screenshots
 
 At least one is required; **1280×800** is the safe size. Capture them against
