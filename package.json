@@ -8,12 +8,14 @@
     "eslint": "^9.35.0",
     "eslint-config-prettier": "^10.1.0",
     "globals": "^16.4.0",
+    "playwright-core": "^1.56.0",
     "prettier": "3.6.2",
     "web-ext": "^10.4.0"
   },
   "scripts": {
     "dev": "web-ext --config=web-ext.config.mjs run",
     "build": "web-ext --config=web-ext.config.mjs build --overwrite-dest",
+    "screenshots": "node scripts/screenshots.mjs",
     "lint": "eslint . --fix",
     "lint:check": "eslint .",
     "format": "prettier . --write",

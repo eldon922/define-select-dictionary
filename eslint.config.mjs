@@ -24,6 +24,11 @@ export default defineConfig([
     },
   },
   {
+    // Build and store tooling runs in Node, not the browser.
+    files: ["scripts/**/*.mjs"],
+    languageOptions: { globals: globals.node },
+  },
+  {
     files: ["**/*.css"],
     plugins: { css },
     language: "css/css",

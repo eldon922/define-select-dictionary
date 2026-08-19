@@ -14,7 +14,7 @@ const { computePosition, offset, flip, shift, arrow, autoUpdate } =
   globalThis.FloatingUIDOM;
 
 // Marker attribute identifying popup hosts created by this extension
-const POPUP_HOST_ATTR = "data-lexigo-popup";
+const POPUP_HOST_ATTR = "data-define-select-popup";
 
 // Remove popups orphaned by a previous content-script context
 for (const el of document.querySelectorAll(
@@ -44,7 +44,10 @@ function loadPopupAssets() {
     })
     .catch((error) => {
       POPUP_ASSETS = null;
-      console.error("Lexigo: failed to load popup assets", error);
+      console.error(
+        "define-select-dictionary: failed to load popup assets",
+        error,
+      );
       throw error;
     });
   return POPUP_ASSETS;
@@ -177,12 +180,12 @@ function noMeaningFound(popupDiv) {
  * @param event {Event} The event that triggered the popup.
  */
 function openModal(event) {
-  const info = getSelectionInfo(event);
+  const fromPopup = eventFromPopup(event);
+  const info = getSelectionInfo(event, fromPopup);
   if (!info) {
     return;
   }
 
-  const fromPopup = eventFromPopup(event);
   if (fromPopup) {
     pruneSubtree(fromPopup.dataset.id);
   }
@@ -213,13 +216,38 @@ document.addEventListener("dblclick", (e) => {
 });
 
 /**
+ * Read the selection a double-click produced.
+ *
+ * Chromium retargets a selection made inside a shadow root: the document's
+ * selection still stringifies to the selected word, but it reports itself as
+ * collapsed with both endpoints moved onto the host element, so the usual
+ * checks reject it and no range is available to anchor to. The shadow root's
+ * own getSelection() is the one that still knows the real range. Nested
+ * lookups, where the user double-clicks a word inside a popup, depend on this.
+ *
+ * @param fromPopup {?HTMLElement} The popup the double-click landed in, if any.
+ * @returns {?Selection} The selection to read, or null if there is none.
+ */
+function selectionFor(fromPopup) {
+  const root = fromPopup?.shadowRoot;
+  if (root && typeof root.getSelection === "function") {
+    const selection = root.getSelection();
+    if (selection?.rangeCount && !selection.isCollapsed) {
+      return selection;
+    }
+  }
+  return globalThis.getSelection?.() ?? null;
+}
+
+/**
  * Get information about the current text selection.
  *
  * @param event {Event} The event that triggered the selection.
+ * @param fromPopup {?HTMLElement} The popup the event came from, if any.
  * @returns The selection info or null if no valid selection.
  */
-function getSelectionInfo(event) {
-  const selection = globalThis.getSelection?.();
+function getSelectionInfo(event, fromPopup = null) {
+  const selection = selectionFor(fromPopup);
   if (!selection || selection.isCollapsed || !selection.rangeCount) {
     return null;
   }
