@@ -45,7 +45,7 @@ Either enable GitHub Pages and link the rendered page, or link the file
 directly:
 
 ```
-https://github.com/eldon922/Lexigo/blob/main/PRIVACY.md
+https://github.com/eldon922/define-select-dictionary/blob/main/PRIVACY.md
 ```
 
 Update the URL if you rename the repository or default branch.

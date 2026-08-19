@@ -21,7 +21,7 @@
   }
 }
 
-.lexigo-popup {
+.popup {
   position: relative;
   background: var(--popup-bg);
   color: var(--popup-text);
@@ -39,7 +39,7 @@
   border-radius: 12px;
 }
 
-.lexigo-arrow {
+.arrow {
   position: absolute;
   width: 12px;
   height: 12px;
@@ -48,7 +48,7 @@
   box-shadow: 0 0 1px var(--popup-border);
 }
 
-.lexigo-container {
+.container {
   position: relative;
   background: var(--popup-bg);
   border-radius: inherit;

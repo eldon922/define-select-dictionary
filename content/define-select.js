@@ -319,7 +319,7 @@ function createDiv(info, parentId, assets) {
   const moreInfoEl = shadow.querySelector(".learn-more");
   const audioEl = shadow.querySelector(".audio");
   const closeBtn = shadow.querySelector(".close-btn");
-  const arrowEl = shadow.querySelector(".lexigo-arrow");
+  const arrowEl = shadow.querySelector(".arrow");
 
   const ddgLang = LANGUAGE === "en" ? "us-en" : LANGUAGE;
   moreInfoEl.href = `https://noai.duckduckgo.com/search?kl=${ddgLang}&q=define+${encodeURIComponent(info.word)}`;

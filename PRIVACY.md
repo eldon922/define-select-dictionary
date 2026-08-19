@@ -61,4 +61,4 @@ the package.
 ## Contact
 
 Questions or concerns: open an issue at
-<https://github.com/eldon922/Lexigo/issues>.
+<https://github.com/eldon922/define-select-dictionary/issues>.

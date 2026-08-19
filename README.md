@@ -8,9 +8,10 @@ option to learn more, without having to leave the page.
 
 Until it is listed in Edge Add-ons, install it from source:
 
-1. Build the package ([Development](#development)) with `npm run build`, or simply clone this repository
-   ([GitHub](https://github.com/jortvanleenen/lexigo)) — the repository root is a loadable extension as-is.
-2. Open `chrome://extensions` (Chrome) or `edge://extensions` (Edge) and enable **Developer mode**.
+1. Build the package ([Development](#development)) with `npm run build`, or simply clone
+   [this repository](https://github.com/eldon922/define-select-dictionary) — the repository root is a loadable
+   extension as-is.
+2. Open `edge://extensions` (Edge) or `chrome://extensions` (Chrome) and enable **Developer mode**.
 3. Choose **Load unpacked** and select the repository root, or drag the built zip from `web-ext-artifacts/` onto the
    page.
 
