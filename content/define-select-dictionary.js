@@ -14,7 +14,7 @@ const { computePosition, offset, flip, shift, arrow, autoUpdate } =
   globalThis.FloatingUIDOM;
 
 // Marker attribute identifying popup hosts created by this extension
-const POPUP_HOST_ATTR = "data-define-select-popup";
+const POPUP_HOST_ATTR = "data-define-select-dictionary-popup";
 
 // Remove popups orphaned by a previous content-script context
 for (const el of document.querySelectorAll(
@@ -45,7 +45,7 @@ function loadPopupAssets() {
     .catch((error) => {
       POPUP_ASSETS = null;
       console.error(
-        "define-select-dictionary: failed to load popup assets",
+        "Define Select Dictionary: failed to load popup assets",
         error,
       );
       throw error;

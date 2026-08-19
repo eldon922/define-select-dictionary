@@ -125,9 +125,12 @@ try {
     page
       .waitForFunction(
         (n) =>
-          [...document.querySelectorAll("[data-define-select-popup]")].filter(
-            (host) => host.shadowRoot?.querySelector(".definitions li"),
-          ).length >= n,
+          [
+            ...document.querySelectorAll(
+              "[data-define-select-dictionary-popup]",
+            ),
+          ].filter((host) => host.shadowRoot?.querySelector(".definitions li"))
+            .length >= n,
         count,
         { timeout: 15000 },
       )
@@ -145,7 +148,7 @@ try {
   // A nested lookup: double-click a word inside the popup to define that too.
   const target = await page.evaluate(() => {
     const root = document.querySelector(
-      "[data-define-select-popup]",
+      "[data-define-select-dictionary-popup]",
     ).shadowRoot;
     const walker = document.createTreeWalker(
       root.querySelector(".definitions li"),

@@ -9,7 +9,8 @@ the package — `web-ext.config.mjs` keeps these files out of the zip.
 npm run build
 ```
 
-This writes `web-ext-artifacts/define-select-dictionary-<version>.zip`. That
+This writes `web-ext-artifacts/define_select_dictionary-<version>.zip` (web-ext
+derives that filename from the manifest name). That
 single file is the upload. Load it unpacked once more before submitting
 (`edge://extensions` → Developer mode → Load unpacked) and confirm a
 double-click still defines a word.
@@ -55,7 +56,7 @@ Update the URL if you rename the repository or default branch.
 **Name**
 
 ```
-define-select-dictionary
+Define Select Dictionary
 ```
 
 **Short description** (keep under ~132 characters)
@@ -93,7 +94,8 @@ PRIVACY
 No accounts, no analytics, no tracking, and no data sent to the developer.
 The only thing that leaves your browser is the single word you ask to define,
 sent to the dictionary services that answer the lookup. Your word history is
-stored locally and never transmitted. Full policy: <PRIVACY POLICY URL>
+stored locally and never transmitted. Full policy:
+https://github.com/eldon922/define-select-dictionary/blob/main/PRIVACY.md
 
 Definitions come from the free Dictionary API (dictionaryapi.dev), with a
 DuckDuckGo fallback for words it does not know.
@@ -101,8 +103,6 @@ DuckDuckGo fallback for words it does not know.
 Open source under the GPLv3. Originally based on Lexigo by Jort van Leenen,
 itself based on Dictionary Anywhere by meetDeveloper.
 ```
-
-Replace `<PRIVACY POLICY URL>` with the URL from step 4.
 
 ## 6. Screenshots
 

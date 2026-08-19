@@ -2,7 +2,7 @@
 
 _Last updated: 19 August 2026_
 
-This policy covers the **define-select-dictionary** browser extension.
+This policy covers the **Define Select Dictionary** browser extension.
 
 ## The short version
 

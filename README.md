@@ -1,6 +1,6 @@
-# define-select-dictionary
+# Define Select Dictionary
 
-define-select-dictionary is an instant, in-browser dictionary for Edge and Chrome.
+Define Select Dictionary is an instant, in-browser dictionary for Edge and Chrome.
 Whenever you come across an unfamiliar word online, simply double-click it to see its definitions, pronunciation, and an
 option to learn more, without having to leave the page.
 
@@ -89,7 +89,7 @@ Changes made in this fork, as the GPLv3 asks be stated:
 - Added a toolbar button that opens the options page.
 - Fixed nested lookups, which Chromium broke: it retargets a selection made inside a shadow root, reporting it as
   collapsed, so double-clicking a word inside a popup did nothing.
-- Renamed the extension to define-select-dictionary.
+- Renamed the extension to Define Select Dictionary.
 
 ## License
 
