@@ -1,3 +1,7 @@
+// Chrome and Edge expose the extension APIs under `chrome`; alias them so the
+// rest of the code reads as standard WebExtensions.
+const browser = globalThis.browser ?? globalThis.chrome;
+
 const DEFAULT_LANGUAGE = "en",
   DEFAULT_TRIGGER_KEY = "none",
   IS_HISTORY_ENABLED_BY_DEFAULT = true,
@@ -118,7 +122,14 @@ DOWNLOAD_HISTORY_BUTTON.addEventListener("click", downloadHistory);
 SAVE_OPTIONS_BUTTON.addEventListener("click", saveOptions);
 RESET_OPTIONS_BUTTON.addEventListener("click", resetOptions);
 
-if (globalThis.navigator.platform.toLowerCase().includes(OS_MAC)) {
+// navigator.platform is deprecated; Chrome and Edge report "macOS" through
+// userAgentData instead, so prefer that and keep the old field as a fallback.
+const PLATFORM =
+  globalThis.navigator.userAgentData?.platform ??
+  globalThis.navigator.platform ??
+  "";
+
+if (PLATFORM.toLowerCase().includes(OS_MAC)) {
   document.getElementById("popup-dblclick-key-ctrl").textContent = KEY_COMMAND;
   document.getElementById("popup-dblclick-key-ctrl").value = KEY_META;
 }

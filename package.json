@@ -16,9 +16,8 @@
     "build": "web-ext --config=web-ext.config.mjs build --overwrite-dest",
     "lint": "eslint . --fix",
     "lint:check": "eslint .",
-    "lint:ext": "web-ext --config=web-ext.config.mjs lint",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
-    "prepare": "npm run lint && npm run format && npm run lint:ext"
+    "prepare": "npm run lint && npm run format"
   }
 }

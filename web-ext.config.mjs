@@ -6,4 +6,9 @@ export default {
     "web-ext.config.mjs",
     "eslint.config.mjs",
   ],
+  run: {
+    // Chrome and Edge are both Chromium; web-ext launches whichever it finds,
+    // or the one named by the CHROME_PATH environment variable.
+    target: ["chromium"],
+  },
 };

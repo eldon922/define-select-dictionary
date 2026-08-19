@@ -1,7 +1,22 @@
+// Chrome and Edge expose the extension APIs under `chrome`; alias them so the
+// rest of the code reads as standard WebExtensions.
+const browser = globalThis.browser ?? globalThis.chrome;
+
 const DEFAULT_HISTORY_SETTING = { enabled: true };
 const MAX_DEFINITIONS = 5;
+const OFFSCREEN_DOCUMENT = "offscreen/offscreen.html";
+
+// Chrome and Edge have no per-extension preferences button as prominent as the
+// one in Firefox's Add-ons Manager, so the toolbar icon opens the options page.
+browser.action.onClicked.addListener(() => browser.runtime.openOptionsPage());
 
 browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  // Messages this worker sends to the offscreen document come back to every
+  // extension context, this listener included; leave those to their addressee.
+  if (request?.target === "offscreen") {
+    return;
+  }
+
   const { word, lang } = request || {};
   const term = (word || "").trim();
   if (!term) {
@@ -25,52 +40,17 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
     const url = `https://noai.duckduckgo.com/?t=h_&q=define+${encodeURIComponent(term)}&ia=web`;
     return fetch(url)
       .then((r) => r.text())
-      .then((html) => {
-        const doc = new DOMParser().parseFromString(html, "text/html");
-        const module = doc.querySelector(".module.ia-module--definitions");
-        if (!module) return null;
-
-        const title = module.querySelector(".module__title");
-        const wordText = title ? title.childNodes[0].textContent.trim() : term;
-
-        const meanings = [];
-        const defEls = module.querySelectorAll(
-          ".module--definitions__definition",
-        );
-        for (const defEl of defEls) {
-          const def = defEl.textContent.trim();
-          if (!def) continue;
-          meanings.push({
-            partOfSpeech: "",
-            definition: capitalize(def),
-            example: null,
-          });
-          if (meanings.length >= MAX_DEFINITIONS) break;
-        }
-        if (!meanings.length) return null;
-
-        return {
-          word: wordText,
-          phoneticText: null,
-          audioSrc: null,
-          meanings,
-        };
-      })
+      .then((html) => parseDuckDuckGoHtml(html))
+      .then((parsed) => buildFallbackContent(parsed, term))
       .catch(() => null);
   };
 
   primary()
     .then((content) => content ?? fallback())
-    .then((content) => {
-      sendResponse({ content });
-
-      if (content) {
-        browser.storage.local.get().then((results) => {
-          const history = results.history || DEFAULT_HISTORY_SETTING;
-          if (history.enabled) return saveWord(content);
-        });
-      }
-    })
+    // Write the history entry before answering: once sendResponse has run, the
+    // service worker is free to be suspended and a pending write would be lost.
+    .then((content) => (content ? rememberWord(content) : null))
+    .then((content) => sendResponse({ content }))
     .catch(() => sendResponse({ content: null }));
 
   return true;
@@ -78,6 +58,32 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 function capitalize(text) {
   return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+/**
+ * Shape the DuckDuckGo fallback result like a dictionaryapi.dev one, or return
+ * null when it carries no usable definitions.
+ *
+ * @param parsed {?{word: string, definitions: string[]}} The parsed page.
+ * @param term {string} The looked-up word, used when DuckDuckGo names none.
+ */
+function buildFallbackContent(parsed, term) {
+  if (!parsed?.definitions?.length) {
+    return null;
+  }
+
+  return {
+    word: parsed.word || term,
+    phoneticText: null,
+    audioSrc: null,
+    meanings: parsed.definitions
+      .slice(0, MAX_DEFINITIONS)
+      .map((definition) => ({
+        partOfSpeech: "",
+        definition: capitalize(definition),
+        example: null,
+      })),
+  };
 }
 
 /**
@@ -137,6 +143,64 @@ function parseDictionaryApiResponse(json, term) {
     ...findPhonetics(json),
     meanings,
   };
+}
+
+// Chrome allows a single offscreen document at a time, so lookups take turns
+// on this chain rather than racing each other to create one.
+let offscreenQueue = Promise.resolve();
+
+/**
+ * Parse a DuckDuckGo results page in an offscreen document. A service worker
+ * has no DOM, so DOMParser lives in a document created just for this.
+ *
+ * @param html {string} The raw HTML of a DuckDuckGo results page.
+ * @returns {Promise<?{word: string, definitions: string[]}>}
+ */
+function parseDuckDuckGoHtml(html) {
+  const run = () =>
+    browser.offscreen
+      .createDocument({
+        url: OFFSCREEN_DOCUMENT,
+        reasons: ["DOM_PARSER"],
+        justification:
+          "Parse the HTML of the DuckDuckGo definitions fallback page.",
+      })
+      .catch((error) => {
+        // A document left behind by an earlier worker generation is exactly
+        // what this call would have created, so only real failures propagate.
+        if (!/single offscreen document/i.test(error?.message ?? "")) {
+          throw error;
+        }
+      })
+      .then(() =>
+        browser.runtime.sendMessage({
+          target: "offscreen",
+          type: "parse-ddg-definitions",
+          html,
+        }),
+      )
+      .finally(() => browser.offscreen.closeDocument().catch(() => {}));
+
+  offscreenQueue = offscreenQueue.then(run, run);
+  return offscreenQueue;
+}
+
+/**
+ * Store a looked-up word in the local history, unless the user turned history
+ * off. Never rejects: a failed write must not cost the user their definition.
+ *
+ * @param content {Object} The popup content to record.
+ * @returns {Promise<Object>} The same content, once any write has settled.
+ */
+function rememberWord(content) {
+  return browser.storage.local
+    .get("history")
+    .then((results) => {
+      const history = results.history || DEFAULT_HISTORY_SETTING;
+      return history.enabled ? saveWord(content) : undefined;
+    })
+    .catch(() => {})
+    .then(() => content);
 }
 
 function saveWord(content) {

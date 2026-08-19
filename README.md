@@ -1,15 +1,21 @@
 # Lexigo
 
-Lexigo is an instant, in-browser dictionary for Firefox.
+Lexigo is an instant, in-browser dictionary for Chrome and Edge.
 Whenever you come across an unfamiliar word online, simply double-click it to see its definitions, pronunciation, and an
 option to learn more, without having to leave the page.
 
 ## Installation
 
-[**Get Lexigo on Firefox Add-ons**](https://addons.mozilla.org/en-US/firefox/addon/lexigo/)
+Until Lexigo is listed in the Chrome Web Store and Edge Add-ons, install it from source:
 
-Alternatively, build it from source ([Development](#development)) and load the packaged zip, or run straight from this
-repository ([GitHub](https://github.com/jortvanleenen/lexigo)) with `npm run dev`.
+1. Build the package ([Development](#development)) with `npm run build`, or simply clone this repository
+   ([GitHub](https://github.com/jortvanleenen/lexigo)) — the repository root is a loadable extension as-is.
+2. Open `chrome://extensions` (Chrome) or `edge://extensions` (Edge) and enable **Developer mode**.
+3. Choose **Load unpacked** and select the repository root, or drag the built zip from `web-ext-artifacts/` onto the
+   page.
+
+Alternatively, run straight from this repository with `npm run dev`, which launches a fresh Chromium profile with the
+extension already loaded and reloads it on save.
 
 ## Features
 
@@ -30,8 +36,8 @@ repository ([GitHub](https://github.com/jortvanleenen/lexigo)) with `npm run dev
 2. Click the speaker icon to hear the word, or "Learn more »" for a full search.
 3. Click anywhere outside the popup, or its × button, to dismiss it.
 
-Settings live under the extension's options page (Add-ons Manager → Lexigo → Preferences): language, trigger key, and
-word history (including CSV download and clearing).
+Settings live on the extension's options page: click the Lexigo toolbar icon, or open it from the extensions page
+(Details → Extension options). It covers language, trigger key, and word history (including CSV download and clearing).
 
 ## How it works
 
@@ -39,27 +45,35 @@ Definitions come from the free [Dictionary API](https://dictionaryapi.dev/), wit
 doesn't know. Lookups are sent only to those services and only when you trigger them; the extension collects no data
 (word history is stored locally in your browser and never leaves it).
 
+Lexigo is a Manifest V3 extension. Its background logic runs in a service worker, which has no DOM of its own, so the
+HTML of the DuckDuckGo fallback is parsed in a short-lived
+[offscreen document](https://developer.chrome.com/docs/extensions/reference/api/offscreen) that is closed again as soon
+as the parse finishes.
+
 ## Development
 
-Prerequisites: Node.js and Firefox.
+Prerequisites: Node.js and Chrome or Edge.
 
 ```bash
 npm install        # install dev tooling (ESLint, Prettier, web-ext)
-npm run dev        # launch Firefox with the extension, auto-reloading on save
+npm run dev        # launch Chromium with the extension, auto-reloading on save
 npm run build      # package the extension into web-ext-artifacts/
 ```
+
+`npm run dev` picks up whichever Chromium-based browser it can find; point it at a specific one by setting
+`CHROME_PATH`, for example `CHROME_PATH="/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge" npm run dev`.
 
 Quality checks:
 
 ```bash
 npm run lint       # ESLint with auto-fix (lint:check to only report)
 npm run format     # Prettier write (format:check to only report)
-npm run lint:ext   # addons-linter, the same validation AMO runs on submission
 ```
 
 ## Credits
 
 Original work by meetDeveloper ([GitHub Repository](https://github.com/meetDeveloper/Dictionary-Anywhere)).
+Lexigo is authored by Jort van Leenen.
 
 ## License
 
