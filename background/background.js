@@ -26,23 +26,58 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   const langNorm = (lang || "en").toLowerCase();
 
+  // A word neither source knows and a source that could not be reached both
+  // used to end up as a bare null, which left the popup claiming "no
+  // definition" for what was really a network or parsing failure. Record why
+  // each source gave up so the popup, and this worker's console, can tell the
+  // two apart.
+  const failures = [];
+  const giveUp = (source, reason) => {
+    const detail = `${source}: ${reason}`;
+    failures.push(detail);
+    console.warn(`Lexigo: lookup failed — ${detail}`);
+    return null;
+  };
+
   const primary = () => {
     if (!langNorm.startsWith("en")) return Promise.resolve(null);
     const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(term)}`;
     return fetch(url)
-      .then((r) => (r.ok ? r.json() : Promise.resolve(null)))
-      .then((json) => parseDictionaryApiResponse(json, term))
-      .catch(() => null);
+      .then((r) => {
+        // 404 is how dictionaryapi.dev reports an unknown word: not an error,
+        // just a reason to try the fallback.
+        if (r.status === 404) return null;
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json().then((json) => parseDictionaryApiResponse(json, term));
+      })
+      .catch((error) =>
+        giveUp("api.dictionaryapi.dev", error.message ?? error),
+      );
   };
 
   const fallback = () => {
     console.log("Falling back to DDG lookup");
     const url = `https://noai.duckduckgo.com/?t=h_&q=define+${encodeURIComponent(term)}&ia=web`;
     return fetch(url)
-      .then((r) => r.text())
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.text();
+      })
       .then((html) => parseDuckDuckGoHtml(html))
-      .then((parsed) => buildFallbackContent(parsed, term))
-      .catch(() => null);
+      .then((parsed) => {
+        if (!parsed) {
+          // Normally DuckDuckGo simply has no definition for this word, so
+          // this is a genuine miss rather than a failure. It is also what a
+          // change to their markup would look like, hence the breadcrumb.
+          console.log(
+            "Lexigo: DuckDuckGo returned no definitions module for",
+            term,
+          );
+          return null;
+        }
+        return buildFallbackContent(parsed, term);
+      })
+      .catch((error) => giveUp("noai.duckduckgo.com", error.message ?? error));
   };
 
   primary()
@@ -50,8 +85,15 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Write the history entry before answering: once sendResponse has run, the
     // service worker is free to be suspended and a pending write would be lost.
     .then((content) => (content ? rememberWord(content) : null))
-    .then((content) => sendResponse({ content }))
-    .catch(() => sendResponse({ content: null }));
+    .then((content) =>
+      sendResponse({
+        content,
+        error: content || !failures.length ? null : failures.join(" | "),
+      }),
+    )
+    .catch((error) =>
+      sendResponse({ content: null, error: error.message ?? String(error) }),
+    );
 
   return true;
 });
