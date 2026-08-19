@@ -161,24 +161,13 @@ function retrieveMeaning(info) {
 }
 
 /**
- * Report that the lookup produced nothing. A word neither source knows and a
- * source that could not be reached are very different problems, so say which
- * one this was rather than blaming the word either way.
+ * Handle the case where no meaning is found for the selected word.
  *
  * @param popupDiv {Object} The popup to update.
- * @param error {?string} Why the lookup failed, or null if it simply found
- *   nothing.
  */
-function noMeaningFound(popupDiv, error = null) {
-  if (error) {
-    popupDiv.heading.textContent = "Lookup failed";
-    popupDiv.status.textContent =
-      "Could not reach the dictionary. Open the extension's service worker console for the reason.";
-    console.warn("Lexigo: lookup failed —", error);
-  } else {
-    popupDiv.heading.textContent = "Sorry";
-    popupDiv.status.textContent = "No definition was found.";
-  }
+function noMeaningFound(popupDiv) {
+  popupDiv.heading.textContent = "Sorry";
+  popupDiv.status.textContent = "No definition was found.";
   popupDiv.moreInfo.hidden = false;
 }
 
@@ -205,18 +194,11 @@ function openModal(event) {
       retrieveMeaning(info)
         .then((response) => {
           if (!response?.content) {
-            return noMeaningFound(createdDiv, response?.error ?? null);
+            return noMeaningFound(createdDiv);
           }
           appendToDiv(createdDiv, response.content);
         })
-        // A rejection here means the background worker never answered at all,
-        // which is a failure rather than an absent definition.
-        .catch((error) =>
-          noMeaningFound(
-            createdDiv,
-            `background worker unavailable (${error.message ?? error})`,
-          ),
-        );
+        .catch(() => noMeaningFound(createdDiv));
     })
     .catch(() => {});
 }
