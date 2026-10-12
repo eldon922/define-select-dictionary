@@ -36,6 +36,41 @@ function parseDefinitions(html) {
   return { word, definitions };
 }
 
+/**
+ * Pull the definitions out of a Google "define X" results page.
+ *
+ * Google embeds dictionary data in elements annotated with data-dobid
+ * attributes: "hdw" for the headword and "dfn" for each definition sense.
+ * These attributes have been stable across many Chrome versions.
+ *
+ * @param html {string} The raw HTML of a Google results page.
+ * @returns {?{word: string, definitions: string[]}} The word and its
+ *   definitions, or null if the page has no dictionary card.
+ */
+function parseGoogleDefinitions(html) {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+
+  const wordEl = doc.querySelector("[data-dobid='hdw']");
+  if (!wordEl) {
+    return null;
+  }
+  const word = wordEl.textContent.trim();
+
+  const definitions = [];
+  for (const el of doc.querySelectorAll("[data-dobid='dfn']")) {
+    const text = el.textContent.trim();
+    if (text) {
+      definitions.push(text);
+    }
+  }
+
+  if (!definitions.length) {
+    return null;
+  }
+
+  return { word, definitions };
+}
+
 // Registered synchronously during document load, so the message the service
 // worker sends right after createDocument() resolves cannot be missed.
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -47,5 +82,9 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === "parse-ddg-definitions") {
     sendResponse(parseDefinitions(message.html));
+  }
+
+  if (message.type === "parse-google-definitions") {
+    sendResponse(parseGoogleDefinitions(message.html));
   }
 });

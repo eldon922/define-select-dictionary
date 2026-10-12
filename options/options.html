@@ -14,6 +14,18 @@
           <div class="option-value">
             <select id="language-selector">
               <option value="en">English (US)</option>
+              <option value="ar">Arabic (عربي)</option>
+              <option value="zh">Chinese – Simplified (中文)</option>
+              <option value="fr">French (Français)</option>
+              <option value="de">German (Deutsch)</option>
+              <option value="hi">Hindi (हिन्दी)</option>
+              <option value="it">Italian (Italiano)</option>
+              <option value="ja">Japanese (日本語)</option>
+              <option value="ko">Korean (한국어)</option>
+              <option value="pt-BR">Portuguese – Brazil (Português)</option>
+              <option value="ru">Russian (Русский)</option>
+              <option value="es">Spanish (Español)</option>
+              <option value="tr">Turkish (Türkçe)</option>
             </select>
           </div>
         </section>
@@ -23,7 +35,7 @@
           <div class="option-value">
             <p class="option-description">
               A pop-up with the definition appears when you double-click a word
-              on a page.
+              or select multiple words on a page.
             </p>
             <div class="option-inline">
               <label for="popup-dblclick-key">Only when holding:</label>
@@ -32,6 +44,23 @@
                 <option value="ctrl" id="popup-dblclick-key-ctrl">Ctrl</option>
                 <option value="alt">Alt</option>
                 <option value="shift">Shift</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <section class="option-row">
+          <h2 class="option-name">Search engine</h2>
+          <div class="option-value">
+            <p class="option-description">
+              The text you select is sent to this search engine to find its
+              definition, and the "Learn more" link opens a search there.
+            </p>
+            <div class="option-inline">
+              <label for="search-engine-selector">Open definitions in:</label>
+              <select id="search-engine-selector">
+                <option value="google">Google</option>
+                <option value="ddg">DuckDuckGo</option>
               </select>
             </div>
           </div>

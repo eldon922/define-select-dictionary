@@ -65,7 +65,7 @@ Define Select Dictionary
 **Short description** (keep under ~132 characters)
 
 ```
-Double-click any word on any page to see its definition, pronunciation and examples, without leaving what you are reading.
+Double-click a word or select a phrase on any page to see its definition and pronunciation, without leaving the page.
 ```
 
 **Detailed description**
@@ -73,21 +73,25 @@ Double-click any word on any page to see its definition, pronunciation and examp
 ```
 Look up a word without losing your place.
 
-Double-click any word on any web page and a small popup appears with its
-definition, right where you are reading. Press on and the popup disappears
-when you click away.
+Double-click any word on any web page, or select a few words with the mouse,
+and a small popup appears with the definition, right where you are reading.
+Press on and the popup disappears when you click away.
 
 FEATURES
 
-- Instant lookups: up to five definitions, grouped by part of speech, with
-  example sentences where available.
-- Pronunciation: a phonetic transcription plus a speaker button that plays a
-  recorded pronunciation, falling back to your browser's text-to-speech when
-  no recording exists.
+- Instant lookups: up to five definitions, with part of speech and example
+  sentences where available.
+- Phrase lookups: select several words to define the whole phrase.
+- Pronunciation: a speaker button that reads the word aloud with your browser's
+  text-to-speech, plus a phonetic transcription and a recorded pronunciation
+  where available.
+- Search engine: choose Google or DuckDuckGo for lookups and the Learn more
+  link.
 - Nested lookups: met another word you do not know inside a definition?
   Double-click that one too.
 - Trigger key: optionally require holding Ctrl, Alt or Shift (Command on
-  macOS) while double-clicking, so popups only appear when you want them.
+  macOS) while double-clicking or selecting, so popups only appear when you
+  want them.
 - Word history: optionally keep the words you look up, see the count on the
   options page, and export the lot as CSV. It stays on your device.
 - Dark mode: the popup follows your system colour scheme.
@@ -95,13 +99,15 @@ FEATURES
 PRIVACY
 
 No accounts, no analytics, no tracking, and no data sent to the developer.
-The only thing that leaves your browser is the single word you ask to define,
-sent to the dictionary services that answer the lookup. Your word history is
-stored locally and never transmitted. Full policy:
+The only thing that leaves your browser is the text you select to define, sent
+to the search engine you choose (Google or DuckDuckGo) and, if that finds
+nothing, to a dictionary service. Your word history is stored locally and never
+transmitted. Full policy:
 https://github.com/eldon922/define-select-dictionary/blob/main/PRIVACY.md
 
-Definitions come from the free Dictionary API (dictionaryapi.dev), with a
-DuckDuckGo fallback for words it does not know.
+Definitions come from a web search for the selected text on your chosen search
+engine (Google by default, or DuckDuckGo), with the free Dictionary API
+(dictionaryapi.dev) as a fallback.
 
 Open source under the GPLv3. Originally based on Lexigo by Jort van Leenen,
 itself based on Dictionary Anywhere by meetDeveloper.
@@ -130,7 +136,7 @@ original's name is the confusion this fork was renamed to avoid.
 ## 6. Screenshots
 
 At least one is required; **1280×800** is the safe size. Capture them against
-the real dictionary API so the listing shows what users actually get:
+real lookups so the listing shows what users actually get:
 
 ```bash
 npm run screenshots
@@ -146,44 +152,50 @@ Partner Center has a **Host permission justification** box. Paste this; it
 matches what the code actually does:
 
 ```
-Define Select Dictionary shows the dictionary definition of a word the user
-double-clicks on a web page.
+Define Select Dictionary shows the dictionary definition of a word or phrase
+the user double-clicks or selects on a web page.
 
 Content script on http://*/* and https://*/*
-The extension's entire purpose is to define a word wherever the user is
+The extension's entire purpose is to define text wherever the user is
 reading, so its content script must be present on the pages they visit; it
 cannot know in advance which page holds the unfamiliar word. The script stays
-inert until the user double-clicks, optionally while holding a trigger key they
-configure in the options. It then reads only the current text selection - not
-the rest of the page, not its URL, not form fields or cookies - and renders the
-definition popup inside a shadow root so it cannot disturb the page.
+inert until the user double-clicks a word or drag-selects several words,
+optionally while holding a trigger key they configure in the options. It then
+reads only the current text selection - not the rest of the page, not its URL,
+not form fields or cookies - and renders the definition popup inside a shadow
+root so it cannot disturb the page.
 
-https://api.dictionaryapi.dev/*
-The primary dictionary source. The extension sends the selected word and
-receives its definitions, parts of speech, example sentences, phonetic
-transcription, and a pronunciation recording.
+https://www.google.com/*
+The default search engine. The extension requests a "define" search for the
+selected text and reads the definition card from the results page. The user
+can switch to DuckDuckGo in the options.
 
 https://noai.duckduckgo.com/*
-The fallback dictionary source, requested only when the primary service has no
-entry for the word.
+The alternative search engine, used when the user selects it in the options.
 
-Both hosts are declared as host permissions rather than relying on an ordinary
+https://api.dictionaryapi.dev/*
+The fallback dictionary source, requested only when the search engine returns
+no definition. It returns definitions, parts of speech, example sentences,
+phonetic transcription, and a pronunciation recording.
+
+These hosts are declared as host permissions rather than relying on an ordinary
 fetch because a Manifest V3 service worker's cross-origin requests are subject
-to CORS and would otherwise be blocked. Only the selected word is transmitted;
-no page content, URL, or user identifier accompanies it. The extension has no
+to CORS and would otherwise be blocked. Only the selected text (and the user's
+language setting) is transmitted; no page content, URL, or user identifier
+accompanies it. The extension has no
 backend of its own, no analytics, and no remote code - everything it runs ships
 inside the package.
 ```
 
 The two non-host permissions, should they be queried separately:
 
-| Declared    | Justification                                                                                                                                                                                                                        |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `storage`   | Stores the user's own settings (language, trigger key, whether to keep history) and, when they opt in, the local word history shown on the options page. Nothing is transmitted.                                                     |
-| `offscreen` | The Manifest V3 service worker has no DOM. When the dictionary API has no entry for a word, the extension parses the fallback lookup's HTML with `DOMParser` in a short-lived offscreen document, which it closes again immediately. |
+| Declared    | Justification                                                                                                                                                                                   |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `storage`   | Stores the user's own settings (language, search engine, trigger key, whether to keep history) and, when they opt in, the local word history shown on the options page. Nothing is transmitted. |
+| `offscreen` | The Manifest V3 service worker has no DOM. The extension parses the search results page's HTML with `DOMParser` in a short-lived offscreen document, which it closes again immediately.         |
 
-**Single purpose:** show the dictionary definition of a word the user
-double-clicks on a web page.
+**Single purpose:** show the dictionary definition of a word or phrase the user
+double-clicks or selects on a web page.
 
 ## 8. Data usage
 
@@ -194,20 +206,20 @@ a worse problem after publication.
 Under **What user data do you plan to collect from users now or in the
 future?**, tick exactly one box:
 
-| Box                                 | Answer  | Why                                                                                                                           |
-| ----------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Personally identifiable information | No      | None is read or requested.                                                                                                    |
-| Health information                  | No      | None is read or requested.                                                                                                    |
-| Financial and payment information   | No      | None is read or requested.                                                                                                    |
-| Authentication information          | No      | None is read or requested.                                                                                                    |
-| Personal communications             | No      | None is read or requested.                                                                                                    |
-| Location                            | No      | No geolocation. The IP address reaching the dictionary services is inherent to any web request and is not collected here.     |
-| Web history                         | No      | The extension never records which pages were visited. Word history stores words, not URLs, page titles, or visit times.       |
-| User activity                       | No      | The double-click is a trigger, not telemetry. No clicks, mouse positions, scrolls, or keystrokes are recorded or transmitted. |
-| **Website content**                 | **Yes** | The selected word is text taken from the page, and it is transmitted to the two dictionary services to answer the lookup.     |
+| Box                                 | Answer  | Why                                                                                                                                        |
+| ----------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Personally identifiable information | No      | None is read or requested.                                                                                                                 |
+| Health information                  | No      | None is read or requested.                                                                                                                 |
+| Financial and payment information   | No      | None is read or requested.                                                                                                                 |
+| Authentication information          | No      | None is read or requested.                                                                                                                 |
+| Personal communications             | No      | None is read or requested.                                                                                                                 |
+| Location                            | No      | No geolocation. The IP address reaching the dictionary services is inherent to any web request and is not collected here.                  |
+| Web history                         | No      | The extension never records which pages were visited. Word history stores words, not URLs, page titles, or visit times.                    |
+| User activity                       | No      | The double-click or selection is a trigger, not telemetry. No clicks, mouse positions, scrolls, or keystrokes are recorded or transmitted. |
+| **Website content**                 | **Yes** | The selected text is taken from the page, and it is transmitted to the search engine (and, as fallback, the dictionary API).               |
 
 Only the selection is ever read: the content script calls `toString()` on the
-current selection and nothing else. A user can of course select a word on any
+current selection and nothing else. A user can of course select text on any
 page, so page text of any kind may pass through — which is exactly what ticking
 **Website content** declares.
 

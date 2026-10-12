@@ -3,7 +3,8 @@
  *
  * Drives a real browser with the extension loaded and photographs a genuine
  * lookup, so the listing shows what users actually get rather than a mockup.
- * Requires network access: the definitions come from the live dictionary API.
+ * Requires network access: the definitions come from live lookups (the
+ * default search engine, falling back to the dictionary API).
  *
  *   npm run screenshots
  *   EDGE_PATH="/path/to/msedge" npm run screenshots
@@ -136,7 +137,7 @@ try {
       )
       .catch(() => {
         throw new Error(
-          `Expected ${count} popup(s) with definitions for "${WORD}". Check that the dictionary API is reachable.`,
+          `Expected ${count} popup(s) with definitions for "${WORD}". Check that the search engine and dictionary API are reachable.`,
         );
       });
 

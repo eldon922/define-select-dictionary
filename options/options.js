@@ -4,7 +4,8 @@ const browser = globalThis.browser ?? globalThis.chrome;
 
 const DEFAULT_LANGUAGE = "en",
   DEFAULT_TRIGGER_KEY = "none",
-  IS_HISTORY_ENABLED_BY_DEFAULT = true,
+  DEFAULT_SEARCH_ENGINE = "google",
+  IS_HISTORY_ENABLED_BY_DEFAULT = false,
   SAVE_STATUS = document.querySelector("#save-status"),
   SAVE_OPTIONS_BUTTON = document.querySelector("#save-btn"),
   RESET_OPTIONS_BUTTON = document.querySelector("#reset-btn"),
@@ -23,6 +24,7 @@ function saveOptions(e) {
           key: document.querySelector("#popup-dblclick-key").value,
         },
       },
+      searchEngine: document.querySelector("#search-engine-selector").value,
       history: {
         enabled: document.querySelector("#store-history-checkbox").checked,
       },
@@ -38,6 +40,7 @@ function restoreOptions() {
   storageItem.then((results) => {
     let language = results.language,
       interaction = results.interaction || {},
+      searchEngine = results.searchEngine || DEFAULT_SEARCH_ENGINE,
       history = results.history || { enabled: IS_HISTORY_ENABLED_BY_DEFAULT },
       definitions = results.definitions || {};
 
@@ -46,6 +49,8 @@ function restoreOptions() {
 
     document.querySelector("#popup-dblclick-key").value =
       (interaction.dblClick && interaction.dblClick.key) || DEFAULT_TRIGGER_KEY;
+
+    document.querySelector("#search-engine-selector").value = searchEngine;
 
     document.querySelector("#store-history-checkbox").checked = history.enabled;
     document.querySelector("#num-words-in-history").innerText =
@@ -91,6 +96,7 @@ function resetOptions(e) {
           key: DEFAULT_TRIGGER_KEY,
         },
       },
+      searchEngine: DEFAULT_SEARCH_ENGINE,
       history: {
         enabled: IS_HISTORY_ENABLED_BY_DEFAULT,
       },

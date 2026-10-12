@@ -4,8 +4,17 @@ const browser = globalThis.browser ?? globalThis.chrome;
 
 const DEFAULT_LANGUAGE = "en";
 const DEFAULT_TRIGGER_KEY = "none";
+const DEFAULT_SEARCH_ENGINE = "google";
+
+// The background lookup gives up on its own after about 14 seconds; this is the
+// content script's own safety net in case no reply ever arrives.
+const LOOKUP_TIMEOUT_MS = 20000;
+
+const RELOADED_MESSAGE =
+  "Define Select Dictionary was reloaded or updated. Refresh this page to use it again.";
 let LANGUAGE = DEFAULT_LANGUAGE;
 let TRIGGER_KEY = DEFAULT_TRIGGER_KEY;
+let SEARCH_ENGINE = DEFAULT_SEARCH_ENGINE;
 
 let POPUP_ID = 0;
 const POPUP_LINKS = new Map();
@@ -141,7 +150,14 @@ function removeAllPopups() {
   }
 }
 
+// A drag-select ends with mouseup and then an immediate click. Without this
+// flag that click would close the popup the mouseup handler just opened.
+let SELECTION_JUST_MADE = false;
+
 document.addEventListener("click", (e) => {
+  if (SELECTION_JUST_MADE) {
+    return;
+  }
   if (!eventFromPopup(e)) {
     removeAllPopups();
   }
@@ -159,8 +175,21 @@ function retrieveMeaning(info) {
   return browser.runtime.sendMessage({
     word: info.word,
     lang: LANGUAGE,
+    searchEngine: SEARCH_ENGINE,
     time: Date.now(),
   });
+}
+
+/**
+ * Replace a popup's "Please wait…" with an explanation of what went wrong.
+ *
+ * @param popupDiv {Object} The popup to update.
+ * @param heading {string} The new heading.
+ * @param message {string} The status line to show under it.
+ */
+function showFailure(popupDiv, heading, message) {
+  popupDiv.heading.textContent = heading;
+  popupDiv.status.textContent = message;
 }
 
 /**
@@ -169,9 +198,76 @@ function retrieveMeaning(info) {
  * @param popupDiv {Object} The popup to update.
  */
 function noMeaningFound(popupDiv) {
-  popupDiv.heading.textContent = "Sorry";
-  popupDiv.status.textContent = "No definition was found.";
-  popupDiv.moreInfo.hidden = false;
+  showFailure(popupDiv, "Sorry", "No definition was found.");
+}
+
+/**
+ * Tell whether this script has been cut off from its extension. When the
+ * extension is reloaded or updated, tabs that were already open keep running
+ * the old content script, and every extension call from it throws.
+ *
+ * @returns {boolean}
+ */
+function extensionWasReloaded() {
+  return !browser.runtime?.id;
+}
+
+/**
+ * Ask the background for a definition and show the outcome in the popup. Every
+ * path ends by replacing "Please wait…", including a dead extension context
+ * and a reply that never arrives.
+ *
+ * @param info {Object} The selection info.
+ * @param popupDiv {Object} The popup to update.
+ */
+function lookUp(info, popupDiv) {
+  if (extensionWasReloaded()) {
+    showFailure(popupDiv, "Extension reloaded", RELOADED_MESSAGE);
+    return;
+  }
+
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error("Lookup timed out")),
+      LOOKUP_TIMEOUT_MS,
+    );
+  });
+
+  Promise.race([Promise.resolve().then(() => retrieveMeaning(info)), timeout])
+    .then((response) => {
+      if (!response?.content) {
+        return noMeaningFound(popupDiv);
+      }
+      appendToDiv(popupDiv, response.content);
+    })
+    .catch(() => {
+      if (extensionWasReloaded()) {
+        showFailure(popupDiv, "Extension reloaded", RELOADED_MESSAGE);
+      } else {
+        showFailure(
+          popupDiv,
+          "Sorry",
+          "The lookup did not finish. Check your connection and try again.",
+        );
+      }
+    })
+    .finally(() => clearTimeout(timer));
+}
+
+/**
+ * Build the "Learn more" URL based on the current search engine setting.
+ *
+ * @param word {string} The word to look up.
+ * @returns {string} The URL for the search engine.
+ */
+function buildLearnMoreUrl(word) {
+  if (SEARCH_ENGINE === "google") {
+    return `https://www.google.com/search?q=define+${encodeURIComponent(word)}&hl=${LANGUAGE}`;
+  }
+  // DuckDuckGo
+  const ddgLang = LANGUAGE === "en" ? "us-en" : LANGUAGE;
+  return `https://noai.duckduckgo.com/search?kl=${ddgLang}&q=define+${encodeURIComponent(word)}`;
 }
 
 /**
@@ -193,24 +289,48 @@ function openModal(event) {
 
   loadPopupAssets()
     .then((assets) => {
-      const createdDiv = createDiv(info, parentId, assets);
-      retrieveMeaning(info)
-        .then((response) => {
-          if (!response?.content) {
-            return noMeaningFound(createdDiv);
-          }
-          appendToDiv(createdDiv, response.content);
-        })
-        .catch(() => noMeaningFound(createdDiv));
+      lookUp(info, createDiv(info, parentId, assets));
     })
     .catch(() => {});
 }
 
-document.addEventListener("dblclick", (e) => {
-  if (
+/**
+ * Check if the trigger key condition is met for a given mouse event.
+ *
+ * @param e {MouseEvent} The event to check.
+ * @returns {boolean}
+ */
+function triggerKeyActive(e) {
+  return (
     TRIGGER_KEY === "none" ||
     (typeof e[`${TRIGGER_KEY}Key`] === "boolean" && e[`${TRIGGER_KEY}Key`])
-  ) {
+  );
+}
+
+document.addEventListener("dblclick", (e) => {
+  if (triggerKeyActive(e)) {
+    openModal(e);
+  }
+});
+
+/**
+ * Fire openModal when the user finishes drag-selecting multiple words.
+ * Single-word selections are handled by dblclick; this covers multi-word spans.
+ */
+document.addEventListener("mouseup", (e) => {
+  if (eventFromPopup(e)) return; // don't interfere with popup interactions
+  if (!triggerKeyActive(e)) return;
+
+  const selection = globalThis.getSelection?.();
+  if (!selection || selection.isCollapsed || !selection.rangeCount) return;
+  const word = selection.toString().trim();
+  // Only fire for multi-word selections (those containing a space); single
+  // words are already handled by the dblclick listener above.
+  if (word.length > 1 && word.includes(" ")) {
+    removeAllPopups(); // a fresh selection replaces any earlier popup
+    SELECTION_JUST_MADE = true;
+    // The click fires in the same task as mouseup; clear the flag right after.
+    setTimeout(() => (SELECTION_JUST_MADE = false), 0);
     openModal(e);
   }
 });
@@ -321,8 +441,10 @@ function createDiv(info, parentId, assets) {
   const closeBtn = shadow.querySelector(".close-btn");
   const arrowEl = shadow.querySelector(".arrow");
 
-  const ddgLang = LANGUAGE === "en" ? "us-en" : LANGUAGE;
-  moreInfoEl.href = `https://noai.duckduckgo.com/search?kl=${ddgLang}&q=define+${encodeURIComponent(info.word)}`;
+  // Set and immediately show the "Learn more" link — don't wait for the
+  // definition to load so the user can follow it even while it's loading.
+  moreInfoEl.href = buildLearnMoreUrl(info.word);
+  moreInfoEl.hidden = false;
 
   closeBtn.addEventListener("click", (ev) => {
     ev.stopPropagation();
@@ -424,7 +546,6 @@ function appendToDiv(createdDiv, content) {
     createdDiv.definitions.appendChild(item);
   }
   createdDiv.definitions.hidden = false;
-  createdDiv.moreInfo.hidden = false;
 
   createdDiv.audio.hidden = false;
   createdDiv.audio.addEventListener("click", () => {
@@ -441,10 +562,12 @@ function applySettings(results) {
   const {
     language = DEFAULT_LANGUAGE,
     interaction = { dblClick: { key: DEFAULT_TRIGGER_KEY } },
+    searchEngine = DEFAULT_SEARCH_ENGINE,
   } = results;
 
   LANGUAGE = language;
   TRIGGER_KEY = interaction.dblClick?.key ?? DEFAULT_TRIGGER_KEY;
+  SEARCH_ENGINE = searchEngine;
 }
 
 browser.storage.local.get().then(applySettings);
@@ -460,10 +583,14 @@ browser.storage.onChanged.addListener((changes, areaName) => {
   if (changes.interaction) {
     updated.interaction = changes.interaction.newValue;
   }
+  if (changes.searchEngine) {
+    updated.searchEngine = changes.searchEngine.newValue;
+  }
   if (Object.keys(updated).length) {
     applySettings({
       language: LANGUAGE,
       interaction: { dblClick: { key: TRIGGER_KEY } },
+      searchEngine: SEARCH_ENGINE,
       ...updated,
     });
   }
