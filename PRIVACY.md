@@ -24,7 +24,7 @@ the options page to prevent that.
 
 | Recipient               | What is sent                                | When                                                                         |
 | ----------------------- | ------------------------------------------- | ---------------------------------------------------------------------------- |
-| `www.google.com`        | The selected text and your language setting | On every lookup, if Google is your search engine (the default)               |
+| `translate.googleapis.com` | The selected text and your language setting | On every lookup, if Google is your search engine (the default)               |
 | `noai.duckduckgo.com`   | The selected text                           | On every lookup, if DuckDuckGo is your search engine                         |
 | `api.dictionaryapi.dev` | The selected text and your language setting | Only when the search engine finds no definition and your language is covered |
 
@@ -65,9 +65,9 @@ the package.
 ## Permissions and why they exist
 
 - `storage` — to keep your settings and, if you opt in, your word history.
-- `offscreen` — to parse the search results page's HTML, which the extension's
+- `offscreen` — to parse the DuckDuckGo results page's HTML, which the extension's
   background service worker cannot do on its own.
-- Access to `www.google.com`, `noai.duckduckgo.com` and `api.dictionaryapi.dev`
+- Access to `translate.googleapis.com`, `noai.duckduckgo.com` and `api.dictionaryapi.dev`
   — to fetch definitions.
 - Running on the pages you visit — so a double-click or selection can define
   text wherever you read. It acts only on the text you select, only when you

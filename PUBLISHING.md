@@ -165,10 +165,10 @@ reads only the current text selection - not the rest of the page, not its URL,
 not form fields or cookies - and renders the definition popup inside a shadow
 root so it cannot disturb the page.
 
-https://www.google.com/*
-The default search engine. The extension requests a "define" search for the
-selected text and reads the definition card from the results page. The user
-can switch to DuckDuckGo in the options.
+https://translate.googleapis.com/*
+The default search engine. The extension asks Google's translate service for the
+definition of the selected text. The user can switch to DuckDuckGo in the
+options.
 
 https://noai.duckduckgo.com/*
 The alternative search engine, used when the user selects it in the options.
@@ -192,7 +192,7 @@ The two non-host permissions, should they be queried separately:
 | Declared    | Justification                                                                                                                                                                                   |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `storage`   | Stores the user's own settings (language, search engine, trigger key, whether to keep history) and, when they opt in, the local word history shown on the options page. Nothing is transmitted. |
-| `offscreen` | The Manifest V3 service worker has no DOM. The extension parses the search results page's HTML with `DOMParser` in a short-lived offscreen document, which it closes again immediately.         |
+| `offscreen` | The Manifest V3 service worker has no DOM. The extension parses the DuckDuckGo results page's HTML with `DOMParser` in a short-lived offscreen document, which it closes again immediately.         |
 
 **Single purpose:** show the dictionary definition of a word or phrase the user
 double-clicks or selects on a web page.

@@ -34,10 +34,6 @@ const DICTIONARYAPI_LANG_MAP = {
   tr: "tr",
 };
 
-// Chrome and Edge have no per-extension preferences button as prominent as the
-// one in Firefox's Add-ons Manager, so the toolbar icon opens the options page.
-browser.action.onClicked.addListener(() => browser.runtime.openOptionsPage());
-
 browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // Messages this worker sends to the offscreen document come back to every
   // extension context, this listener included; leave those to their addressee.
@@ -71,17 +67,15 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // primary: the selected search engine is the first source tried.
   const primary = () => {
     if (searchEngine === "google") {
-      const url = `https://www.google.com/search?q=define+${encodeURIComponent(term)}&hl=${langNorm}`;
-      return fetchText(url, SEARCH_TIMEOUT_MS, {
-        headers: {
-          // A browser-like UA avoids the stripped-down bot response.
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-          "Accept-Language": `${langNorm},en;q=0.9`,
-        },
-      })
-        .then((html) => parseGoogleHtml(html))
-        .then((parsed) => buildFallbackContent(parsed, term))
+      // Google's search page now needs JavaScript, so ask its translate
+      // service for the definitions instead.
+      const sl = langNorm === "zh" ? "zh-CN" : langNorm.split("-")[0];
+      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${sl}&dt=md&dj=1&q=${encodeURIComponent(term)}`;
+      return withTimeout(
+        (signal) => fetch(url, { signal }).then((r) => (r.ok ? r.json() : null)),
+        SEARCH_TIMEOUT_MS,
+      )
+        .then((json) => parseGoogleResponse(json, term))
         .catch(() => null);
     }
     // DuckDuckGo
@@ -152,7 +146,7 @@ function capitalize(text) {
 }
 
 /**
- * Shape a search-engine result (Google or DuckDuckGo) like a dictionaryapi.dev
+ * Shape a DuckDuckGo result like a dictionaryapi.dev
  * one, or return null when it carries no usable definitions.
  *
  * @param parsed {?{word: string, definitions: string[]}} The parsed page.
@@ -174,6 +168,35 @@ function buildFallbackContent(parsed, term) {
         definition: capitalize(definition),
         example: null,
       })),
+  };
+}
+
+/**
+ * Convert a Google translate response into the popup content shape,
+ * or null if it contains no definitions.
+ */
+function parseGoogleResponse(json, term) {
+  const meanings = (json?.definitions ?? [])
+    .flatMap((group) =>
+      (group.entry ?? [])
+        .filter((entry) => entry.gloss)
+        .map((entry) => ({
+          partOfSpeech: group.pos || "",
+          definition: capitalize(entry.gloss),
+          example: null,
+        })),
+    )
+    .slice(0, MAX_DEFINITIONS);
+
+  if (!meanings.length) {
+    return null;
+  }
+
+  return {
+    word: json.definitions[0].base_form || term,
+    phoneticText: null,
+    audioSrc: null,
+    meanings,
   };
 }
 
@@ -277,18 +300,6 @@ function parseInOffscreen(type, html, justification) {
 
   offscreenQueue = offscreenQueue.then(run, run);
   return offscreenQueue;
-}
-
-/**
- * @param html {string} The raw HTML of a Google results page.
- * @returns {Promise<?{word: string, definitions: string[]}>}
- */
-function parseGoogleHtml(html) {
-  return parseInOffscreen(
-    "parse-google-definitions",
-    html,
-    "Parse the HTML of the Google search results page.",
-  );
 }
 
 /**

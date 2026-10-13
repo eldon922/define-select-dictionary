@@ -51,14 +51,14 @@ and clearing).
 
 ## How it works
 
-Definitions come from a web search for the text you selected, run on the search engine you choose in the options
-(Google by default, or DuckDuckGo). If that search returns no definition, the free
+Definitions come from the search engine you choose in the options: Google (the default; its translate service is asked
+for the definition) or a DuckDuckGo search. If that search returns no definition, the free
 [Dictionary API](https://dictionaryapi.dev/) is tried as a fallback for the languages it supports. Lookups are sent only
 to those services and only when you trigger them; the extension collects no data (word history is stored locally in
 your browser and never leaves it). Full details in [PRIVACY.md](PRIVACY.md).
 
 This is a Manifest V3 extension. Its background logic runs in a service worker, which has no DOM of its own, so the
-HTML of the search results page is parsed in a short-lived
+HTML of the DuckDuckGo results page is parsed in a short-lived
 [offscreen document](https://developer.chrome.com/docs/extensions/reference/api/offscreen) that is closed again as soon
 as the parse finishes.
 
@@ -94,7 +94,7 @@ Changes made in this fork, as the GPLv3 asks be stated:
 - Ported from Firefox to Chromium (Edge and Chrome): Manifest V3 service worker background, Chromium-specific
   manifest keys, and host permissions for the lookup sources.
 - Moved the search results' HTML parsing into an offscreen document, since a service worker has no DOM.
-- Added a toolbar button that opens the options page.
+- Added a toolbar button that shows the options in a popup.
 - Added lookups for multi-word selections made by dragging.
 - Added a search-engine option (Google or DuckDuckGo). The chosen engine is tried first for lookups and drives the Learn
   more link; the Dictionary API is the fallback.
