@@ -13,8 +13,10 @@
     "web-ext": "^10.4.0"
   },
   "scripts": {
-    "dev": "web-ext --config=web-ext.config.mjs run",
-    "build": "web-ext --config=web-ext.config.mjs build --overwrite-dest",
+    "dev": "npm run build && web-ext --no-config-discovery run --source-dir=dist/chromium --target=chromium",
+    "dev:firefox": "npm run build && web-ext --no-config-discovery run --source-dir=dist/firefox --target=firefox-desktop",
+    "build": "node scripts/package.mjs",
+    "lint:firefox": "npm run build && web-ext lint --no-config-discovery --source-dir=dist/firefox",
     "screenshots": "node scripts/screenshots.mjs",
     "lint": "eslint . --fix",
     "lint:check": "eslint .",

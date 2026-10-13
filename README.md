@@ -1,6 +1,6 @@
 # Define Select Dictionary
 
-Define Select Dictionary is an instant, in-browser dictionary for Edge and Chrome.
+Define Select Dictionary is an instant, in-browser dictionary for Edge, Chrome and Firefox.
 Whenever you come across an unfamiliar word or phrase online, simply double-click it (or select it with the mouse) to
 see its definitions, pronunciation, and an option to learn more, without having to leave the page.
 
@@ -8,17 +8,17 @@ see its definitions, pronunciation, and an option to learn more, without having 
 
 Until it is listed in Edge Add-ons, install it from source:
 
-1. Build the package ([Development](#development)) with `npm run build`, or simply clone
-   [this repository](https://github.com/eldon922/define-select-dictionary) — the repository root is a loadable
-   extension as-is.
-2. Open `edge://extensions` (Edge) or `chrome://extensions` (Chrome) and enable **Developer mode**.
-3. Choose **Load unpacked** and select the repository root, or drag the built zip from `web-ext-artifacts/` onto the
-   page.
+1. Clone [this repository](https://github.com/eldon922/define-select-dictionary) and run `npm install` and
+   `npm run build`. This writes one package per browser into `dist/`.
+2. **Edge or Chrome:** open `edge://extensions` or `chrome://extensions`, enable **Developer mode**, choose
+   **Load unpacked** and select `dist/chromium`.
+3. **Firefox (140 or newer):** open `about:debugging#/runtime/this-firefox`, choose **Load Temporary Add-on** and select
+   `dist/firefox/manifest.json`. A temporary add-on is removed when Firefox closes.
 
 See [PUBLISHING.md](PUBLISHING.md) for submitting to Edge Add-ons.
 
-Alternatively, run straight from this repository with `npm run dev`, which launches a fresh Chromium profile with the
-extension already loaded and reloads it on save.
+Alternatively, run straight from this repository with `npm run dev` (Chromium) or `npm run dev:firefox`, which launch a
+fresh browser profile with the extension already loaded and reload it on save.
 
 ## Features
 
@@ -57,10 +57,11 @@ for the definition) or a DuckDuckGo search. If that search returns no definition
 to those services and only when you trigger them; the extension collects no data (word history is stored locally in
 your browser and never leaves it). Full details in [PRIVACY.md](PRIVACY.md).
 
-This is a Manifest V3 extension. Its background logic runs in a service worker, which has no DOM of its own, so the
-HTML of the DuckDuckGo results page is parsed in a short-lived
+This is a Manifest V3 extension. In Chrome and Edge its background logic runs in a service worker, which has no DOM of
+its own, so the HTML of the DuckDuckGo results page is parsed in a short-lived
 [offscreen document](https://developer.chrome.com/docs/extensions/reference/api/offscreen) that is closed again as soon
-as the parse finishes.
+as the parse finishes. Firefox has no service workers for extensions; it runs the same background file as a page that
+does have a DOM, and parses the results there.
 
 ## Development
 
@@ -69,7 +70,9 @@ Prerequisites: Node.js and Chrome or Edge.
 ```bash
 npm install        # install dev tooling (ESLint, Prettier, web-ext)
 npm run dev        # launch Chromium with the extension, auto-reloading on save
-npm run build      # package the extension into web-ext-artifacts/
+npm run dev:firefox # the same, in Firefox
+npm run build      # write the Chrome/Edge and Firefox packages into dist/
+npm run lint:firefox # Mozilla's add-on linter over the Firefox package
 npm run screenshots # capture store screenshots into store/screenshots/
 ```
 
@@ -93,6 +96,8 @@ Changes made in this fork, as the GPLv3 asks be stated:
 
 - Ported from Firefox to Chromium (Edge and Chrome): Manifest V3 service worker background, Chromium-specific
   manifest keys, and host permissions for the lookup sources.
+- Added Firefox support: one manifest holds both browsers' keys and `npm run build` writes a package for each. The
+  DuckDuckGo results are parsed straight in Firefox's background page, which has a DOM.
 - Moved the search results' HTML parsing into an offscreen document, since a service worker has no DOM.
 - Added a toolbar button that shows the options in a popup.
 - Added lookups for multi-word selections made by dragging.

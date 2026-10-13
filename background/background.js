@@ -1,3 +1,4 @@
+/* global parseDefinitions */
 // Chrome and Edge expose the extension APIs under `chrome`; alias them so the
 // rest of the code reads as standard WebExtensions.
 const browser = globalThis.browser ?? globalThis.chrome;
@@ -5,6 +6,8 @@ const browser = globalThis.browser ?? globalThis.chrome;
 const DEFAULT_HISTORY_SETTING = { enabled: false };
 const MAX_DEFINITIONS = 5;
 const OFFSCREEN_DOCUMENT = "offscreen/offscreen.html";
+// Only Chrome and Edge have this API; Firefox never reaches the code using it.
+const offscreen = browser.offscreen;
 
 // Every step of a lookup has a deadline, so a stalled request falls through to
 // the next source (or an error) instead of leaving the popup on "Please wait…".
@@ -72,7 +75,8 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
       const sl = langNorm === "zh" ? "zh-CN" : langNorm.split("-")[0];
       const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${sl}&dt=md&dj=1&q=${encodeURIComponent(term)}`;
       return withTimeout(
-        (signal) => fetch(url, { signal }).then((r) => (r.ok ? r.json() : null)),
+        (signal) =>
+          fetch(url, { signal }).then((r) => (r.ok ? r.json() : null)),
         SEARCH_TIMEOUT_MS,
       )
         .then((json) => parseGoogleResponse(json, term))
@@ -278,7 +282,7 @@ function parseInOffscreen(type, html, justification) {
   const run = () =>
     withTimeout(
       () =>
-        browser.offscreen
+        offscreen
           .createDocument({
             url: OFFSCREEN_DOCUMENT,
             reasons: ["DOM_PARSER"],
@@ -296,7 +300,7 @@ function parseInOffscreen(type, html, justification) {
             browser.runtime.sendMessage({ target: "offscreen", type, html }),
           ),
       OFFSCREEN_TIMEOUT_MS,
-    ).finally(() => browser.offscreen.closeDocument().catch(() => {}));
+    ).finally(() => offscreen.closeDocument().catch(() => {}));
 
   offscreenQueue = offscreenQueue.then(run, run);
   return offscreenQueue;
@@ -307,6 +311,10 @@ function parseInOffscreen(type, html, justification) {
  * @returns {Promise<?{word: string, definitions: string[]}>}
  */
 function parseDuckDuckGoHtml(html) {
+  // Firefox's background page has a DOM; Chrome's service worker does not.
+  if (typeof DOMParser !== "undefined") {
+    return Promise.resolve(parseDefinitions(html));
+  }
   return parseInOffscreen(
     "parse-ddg-definitions",
     html,

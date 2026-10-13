@@ -22,11 +22,11 @@ If you have not set a trigger key (the default), selecting two or more words for
 any reason, such as to copy them, also triggers a lookup. Set a trigger key on
 the options page to prevent that.
 
-| Recipient               | What is sent                                | When                                                                         |
-| ----------------------- | ------------------------------------------- | ---------------------------------------------------------------------------- |
+| Recipient                  | What is sent                                | When                                                                         |
+| -------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------- |
 | `translate.googleapis.com` | The selected text and your language setting | On every lookup, if Google is your search engine (the default)               |
-| `noai.duckduckgo.com`   | The selected text                           | On every lookup, if DuckDuckGo is your search engine                         |
-| `api.dictionaryapi.dev` | The selected text and your language setting | Only when the search engine finds no definition and your language is covered |
+| `noai.duckduckgo.com`      | The selected text                           | On every lookup, if DuckDuckGo is your search engine                         |
+| `api.dictionaryapi.dev`    | The selected text and your language setting | Only when the search engine finds no definition and your language is covered |
 
 If you click **Learn more**, your browser opens a search for the selected text on
 your chosen search engine in a new tab. That is an ordinary visit to that site,
@@ -65,7 +65,7 @@ the package.
 ## Permissions and why they exist
 
 - `storage` — to keep your settings and, if you opt in, your word history.
-- `offscreen` — to parse the DuckDuckGo results page's HTML, which the extension's
+- `offscreen` (Chrome and Edge only) — to parse the DuckDuckGo results page's HTML, which the extension's
   background service worker cannot do on its own.
 - Access to `translate.googleapis.com`, `noai.duckduckgo.com` and `api.dictionaryapi.dev`
   — to fetch definitions.

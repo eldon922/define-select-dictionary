@@ -1,7 +1,8 @@
 # Publishing to Microsoft Edge Add-ons
 
 Everything Partner Center asks for, ready to paste. Nothing here ships inside
-the package — `web-ext.config.mjs` keeps these files out of the zip.
+the package — `npm run build` copies only the extension's own files. Firefox
+Add-ons is covered at the end.
 
 ## 1. Build the package
 
@@ -9,10 +10,9 @@ the package — `web-ext.config.mjs` keeps these files out of the zip.
 npm run build
 ```
 
-This writes `web-ext-artifacts/define_select_dictionary-<version>.zip` (web-ext
-derives that filename from the manifest name). That
-single file is the upload. Load it unpacked once more before submitting
-(`edge://extensions` → Developer mode → Load unpacked) and confirm a
+This writes `dist/define-select-dictionary-<version>-chromium.zip`. That
+single file is the upload (the `-firefox` zip is not for Edge). Load it unpacked once more before submitting
+(`edge://extensions` → Developer mode → Load unpacked → `dist/chromium`) and confirm a
 double-click still defines a word.
 
 **Every submission needs a higher `version` in `manifest.json` than the last
@@ -192,7 +192,7 @@ The two non-host permissions, should they be queried separately:
 | Declared    | Justification                                                                                                                                                                                   |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `storage`   | Stores the user's own settings (language, search engine, trigger key, whether to keep history) and, when they opt in, the local word history shown on the options page. Nothing is transmitted. |
-| `offscreen` | The Manifest V3 service worker has no DOM. The extension parses the DuckDuckGo results page's HTML with `DOMParser` in a short-lived offscreen document, which it closes again immediately.         |
+| `offscreen` | The Manifest V3 service worker has no DOM. The extension parses the DuckDuckGo results page's HTML with `DOMParser` in a short-lived offscreen document, which it closes again immediately.     |
 
 **Single purpose:** show the dictionary definition of a word or phrase the user
 double-clicks or selects on a web page.
@@ -230,6 +230,27 @@ any box makes it mandatory; use the URL from step 4.
 
 Certification usually takes a few days. If it is rejected, the report names the
 specific policy — fix it, bump `version`, rebuild, and resubmit.
+
+## Firefox Add-ons (AMO)
+
+Upload `dist/define-select-dictionary-<version>-firefox.zip` at
+<https://addons.mozilla.org/developers/>, not the `-chromium` one. The listing
+copy in step 5 and the privacy policy from step 4 can be reused.
+
+- `npm run lint:firefox` runs the same linter AMO runs on upload. It should
+  report 0 errors and 0 warnings.
+- The add-on ID is `define-select-dictionary@eldon922`
+  (`browser_specific_settings.gecko.id`). Never change it after the first
+  upload; a different ID is a different add-on.
+- **Data collection** is declared in the manifest as `websiteContent`: Firefox
+  counts text sent outside the browser, and the selected text goes to the search
+  engine you chose and to the Dictionary API. Declaring `none` would be wrong.
+- Firefox 140 is the minimum (142 on Android) because that is when
+  `data_collection_permissions` is understood.
+- No source-code upload should be needed: the code is hand-written, and the two
+  minified Floating UI files in `content/vendor/` are the unmodified npm builds
+  (see `content/vendor/README.md` for versions and how to get them).
+- Test the package in a real Firefox first with `npm run dev:firefox`.
 
 ## Note on the name and licence
 
